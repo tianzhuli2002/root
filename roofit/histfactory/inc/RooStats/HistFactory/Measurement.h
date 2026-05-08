@@ -14,6 +14,7 @@
 #include <TNamed.h>
 
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -22,7 +23,6 @@
 
 class TFile;
 class TH1;
-
 class RooWorkspace;
 
 namespace RooStats::HistFactory {
@@ -712,6 +712,18 @@ public:
    double GetLumi() { return fLumi; }
    /// retrieve relative uncertainty on luminosity
    double GetLumiRelErr() { return fLumiRelErr; }
+   
+   void AddPreprocessFunction( std::string name, std::string expression, std::string dependencies );
+   using PreprocessFunctionCallback = std::function<void(RooWorkspace&)>;
+   void AddPreprocessFunctionCallback( PreprocessFunctionCallback callback );
+   void ApplyPreprocessFunctionCallbacks( RooWorkspace& ws ) const;
+   /// add a preprocess function object
+   void AddFunctionObject( const RooStats::HistFactory::PreprocessFunction function) { fFunctionObjects.push_back( function ); }
+   void SetFunctionObjects( std::vector< RooStats::HistFactory::PreprocessFunction > objects ) { fFunctionObjects = objects; }
+   /// get vector of defined function objects
+   std::vector< RooStats::HistFactory::PreprocessFunction >& GetFunctionObjects() { return fFunctionObjects; }
+   const std::vector< RooStats::HistFactory::PreprocessFunction >& GetFunctionObjects() const { return fFunctionObjects; }
+   std::vector< std::string > GetPreprocessFunctions() const;
 
    void SetBinLow(int BinLow) { fBinLow = BinLow; }
    void SetBinHigh(int BinHigh) { fBinHigh = BinHigh; }
@@ -782,6 +794,22 @@ private:
    std::map<std::string, double> fNoSyst;
 
    std::string GetDirPath(TDirectory *dir);
+  /// Programmatic preprocess callbacks, executed during workspace creation.
+  /// Transient because std::function is not ROOT-streamable.
+  std::vector<PreprocessFunctionCallback> fPreprocessFunctionCallbacks; //!
+
+  /// List of Asimov datasets to generate
+  std::vector< RooStats::HistFactory::Asimov > fAsimovDatasets;
+
+  /// List of Alternate constraint terms
+  std::map< std::string, double > fGammaSyst;
+  std::map< std::string, double > fUniformSyst;
+  std::map< std::string, double > fLogNormSyst;
+  std::map< std::string, double > fNoSyst;
+
+  std::string GetDirPath( TDirectory* dir );
+
+  ClassDefOverride(RooStats::HistFactory::Measurement, 4);
 
    ClassDefOverride(RooStats::HistFactory::Measurement, 3);
 };
